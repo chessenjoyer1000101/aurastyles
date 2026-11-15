@@ -211,7 +211,7 @@ function renderWardrobe() {
       el('button', { className: 'pic', title: pinned ? 'Stop building around this' : 'Build outfits around this', ariaPressed: String(pinned),
         onclick: () => { pinned ? state.pins.delete(it.id) : state.pins.add(it.id); renderPins(); renderWardrobe(); } },
         el('img', { src: img(it.id), alt: it.name, loading: 'lazy' })),
-      pinned ? el('span', { className: 'tag', textContent: 'Build around' }) : '',
+      pinned ? el('span', { className: 'tag', textContent: 'Build around' }) : (it.unsure ? el('span', { className: 'tag', style: 'background:var(--warn);color:#fff', textContent: 'Check category' }) : ''),
       el('button', { className: 'del', textContent: '×', ariaLabel: `Delete ${it.name}`, onclick: async () => {
         try { setWardrobe(await api(`/api/items/${it.id}`, { method: 'DELETE' })); } catch (err) { alertMsg(err.message); }
       } }),

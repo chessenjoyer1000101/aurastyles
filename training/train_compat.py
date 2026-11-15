@@ -83,6 +83,47 @@ def load_outfits(split, row, cat2slot):
     return outfits, slot_of
 
 
+PHONE2SLOT = {"dress": "dress", "hat": "hat", "longsleeve": "top", "outwear": "outerwear", "pants": "bottom",
+              "shirt": "top", "shoes": "shoes", "shorts": "bottom", "skirt": "bottom", "t-shirt": "top"}
+
+
+class PhoneNoise:
+    """Real phone-capture distortion, measured in embedding space.
+
+    For every photo of the public phone-photo dataset (after the app's cut-out step)
+    we take delta = phone_embedding - nearest Polyvore product embedding of the same
+    slot.  Adding such deltas to product embeddings makes them look like phone
+    captures, so the outfit model can be trained (and tested) on phone-like inputs
+    without any phone-photo outfits.  Train and test use disjoint photos.
+    """
+
+    def __init__(self, variant, emb, lookup, n_real):
+        from aura.taxonomy import SLOT_ID
+        z = np.load(DATA / "phone" / f"emb_{variant}.npz")
+        X = torch.from_numpy(z["emb"]).float().to(DEV)
+        y = torch.tensor([SLOT_ID[PHONE2SLOT[l]] for l in z["label"]], device=DEV)
+        P, ps = emb[:n_real], lookup[:n_real].to(DEV)
+        sim = X @ P.T
+        sim.masked_fill_(ps[None] != y[:, None], -1.0)
+        delta = X - P[sim.argmax(1)]
+        test = torch.from_numpy(z["split"] == "test").to(DEV)
+        self.bank = {False: (delta[~test], y[~test]), True: (delta[test], y[test])}
+        print(f"phone noise bank: {int((~test).sum())} train / {int(test.sum())} test deltas, "
+              f"mean |delta| {delta.norm(dim=1).mean():.2f}")
+
+    def __call__(self, e, slots, test=False, p=1.0, gen=None):
+        """e [B,N,D]; whole outfits become phone-like with probability p"""
+        d, y = self.bank[test]
+        B, N, _ = e.shape
+        idx = torch.randint(len(d), (B, N), device=DEV, generator=gen)
+        # prefer a delta measured on the same kind of garment when one exists
+        for _ in range(3):
+            alt = torch.randint(len(d), (B, N), device=DEV, generator=gen)
+            idx = torch.where(y[idx] == slots, idx, alt)
+        on = (torch.rand(B, 1, 1, device=DEV, generator=gen) < p).float()
+        return F.normalize(e + on * d[idx], dim=-1)
+
+
 class Sampler:
     """Vectorised (GPU) sampler.  Every method returns (rows [B,8], slots [B,8], pad [B,8])."""
 
@@ -176,14 +217,18 @@ def collate(samples, emb):
 
 
 @torch.no_grad()
-def score(model, samples, emb, bs=1024):
+def score(model, samples, emb, bs=1024, phone=None):
     out = []
+    gen = torch.Generator(device=DEV).manual_seed(1234)
     for i in range(0, len(samples), bs):
-        out.append(model(*collate(samples[i:i + bs], emb)))
+        e, s, p = collate(samples[i:i + bs], emb)
+        if phone is not None:
+            e = phone(e, s, test=True, gen=gen)
+        out.append(model(e, s, p))
     return torch.cat(out).float().cpu().numpy()
 
 
-def official_eval(model, emb, row, slot_of):
+def official_eval(model, emb, row, slot_of, phone=None):
     def mk(ids):
         ids = [i for i in ids if i in row]
         return torch.tensor([row[i] for i in ids]), torch.tensor([slot_of.get(i, OTHER) for i in ids])
@@ -198,7 +243,7 @@ def official_eval(model, emb, row, slot_of):
             continue
         for a in q["answers"]:
             samples.append(mk(list(q["question"]) + [a]))
-    sc = score(model, samples, emb).reshape(-1, 4)
+    sc = score(model, samples, emb, phone=phone).reshape(-1, 4)
     fitb = float((sc.argmax(1) == 0).mean())
 
     labels, samples = [], []
@@ -208,7 +253,7 @@ def official_eval(model, emb, row, slot_of):
         if len(r) >= 2:
             labels.append(int(p[0]))
             samples.append((r, s))
-    auc = float(roc_auc_score(labels, score(model, samples, emb)))
+    auc = float(roc_auc_score(labels, score(model, samples, emb, phone=phone)))
     official_eval.n = (len(sc), len(labels))
     return fitb, auc
 
@@ -242,12 +287,15 @@ def main():
     ap.add_argument("--steps_per_epoch", type=int, default=150)
     ap.add_argument("--out", default=str(ROOT / "models" / "compat.pt"))
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--phone", default="", help="phone-photo variant (data/phone/emb_<variant>.npz) for phone-noise augmentation")
+    ap.add_argument("--phone_p", type=float, default=0.5, help="share of training outfits made phone-like")
+    ap.add_argument("--eval_only", default="", help="evaluate this checkpoint (clean + phone-like test) and exit")
     ap.add_argument("--pseudo", action="store_true", help="also train on title-only outfits (see embed_missing_text.py)")
     a = ap.parse_args()
     random.seed(a.seed)
     torch.manual_seed(a.seed)
 
-    row, emb, _ = load_embeddings(a.pseudo)
+    row, emb, n_real = load_embeddings(a.pseudo)
     emb = emb.to(DEV)
     cat2slot = load_category_slots(DATA / "polyvore" / "category_id.txt")
     tr, so1 = load_outfits("train", row, cat2slot)
@@ -259,6 +307,14 @@ def main():
         if iid in row:
             lookup[row[iid]] = s
     S_tr, S_va = Sampler(tr, lookup), Sampler(va, lookup)
+    phone = PhoneNoise(a.phone, emb, lookup, n_real) if a.phone else None
+    if a.eval_only:
+        from aura.model import load
+        m = load(a.eval_only, DEV)
+        print("clean test      FITB %.3f AUC %.3f" % official_eval(m, emb, row, slot_of))
+        if phone:
+            print("phone-like test FITB %.3f AUC %.3f" % official_eval(m, emb, row, slot_of, phone))
+        return
 
     model = OutfitCompat(in_dim=emb.shape[1], d=a.d, layers=a.layers, dropout=a.dropout).to(DEV)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=a.wd)
@@ -272,6 +328,8 @@ def main():
             parts = [S_tr.positive(a.bs), S_tr.negative(a.bs), S_tr.fitb(a.bs // 2)]
             r, s, p = (torch.cat(x) for x in zip(*parts))
             e = emb[r]
+            if phone is not None:
+                e = phone(e, s, p=a.phone_p)
             e = F.normalize(e + a.noise * torch.randn_like(e), dim=-1)
             logit = model(e, s, p)
             y = torch.cat([torch.ones(a.bs), torch.zeros(a.bs)]).to(DEV)
@@ -291,7 +349,12 @@ def main():
         if vf + va_auc > best:
             best = vf + va_auc
             tf, ta = official_eval(model, emb, row, slot_of)
-            save(model, a.out, metrics=dict(valid_fitb=vf, valid_auc=va_auc, test_fitb=tf, test_auc=ta), args=vars(a))
+            metrics = dict(valid_fitb=vf, valid_auc=va_auc, test_fitb=tf, test_auc=ta)
+            if phone is not None:
+                pf, pa = official_eval(model, emb, row, slot_of, phone)
+                metrics.update(phone_test_fitb=pf, phone_test_auc=pa)
+                msg += f" | phone-like TEST FITB {pf:.3f} AUC {pa:.3f}"
+            save(model, a.out, metrics=metrics, args=vars(a))
             msg += f" | TEST(official, n={official_eval.n}) FITB {tf:.3f} AUC {ta:.3f}  *saved"
         print(msg, f"[{time.time()-t0:.0f}s]", flush=True)
 

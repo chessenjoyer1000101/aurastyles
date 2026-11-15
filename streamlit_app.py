@@ -122,7 +122,7 @@ with tab_wardrobe:
         for k, it in enumerate(shown):
             with cols[k % 6]:
                 st.image(store.png_path(user, it["id"]), use_container_width=True)
-                st.caption(it["name"])
+                st.caption(it["name"] + ("  \n:orange[Not sure — please check the category]" if it.get("unsure") else ""))
                 slot = st.selectbox("Category", order, index=order.index(it["slot"]) if it["slot"] in order else 0,
                                     format_func=SLOT_LABEL.get, key=f"slot_{it['id']}", label_visibility="collapsed")
                 if slot != it["slot"]:

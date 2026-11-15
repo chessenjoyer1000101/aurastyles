@@ -81,6 +81,8 @@ def add(user: str, a: dict, demo: str | None = None) -> bool:
     np.save(_dir(user) / f"{iid}.npy", a["emb"])
     it = dict(id=iid, name=a["name"], type=a["type"], slot=a["slot"], style=a["style"],
               color=a["color"], colors=a["colors"], added=int(time.time()))
+    if a.get("unsure"):
+        it["unsure"] = True
     if demo:
         it["demo"] = demo
     _save(user, meta + [it])
@@ -105,6 +107,7 @@ def set_slot(user: str, iid: str, slot: str):
     for it in meta:
         if it["id"] == iid:
             it["slot"] = slot
+            it.pop("unsure", None)  # the user has confirmed the category
     _save(user, meta)
 
 

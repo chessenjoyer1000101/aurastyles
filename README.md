@@ -111,6 +111,44 @@ at runtime: it needs Inception-V3 features, a fixed item order and a reference p
 of item embeddings to score against, and the new model outperforms its published
 numbers.
 
+## Phone photos
+
+The outfit model was trained on white-background product shots, but users upload
+phone photos.  This is measured and handled without collecting any photos, using
+the public phone-photo set `alexeygrigorev/clothing-dataset-small` (3,781 photos
+people took of their own clothes, 10 labelled classes; 372 held out for testing).
+
+| on 372 real phone photos | category (slot) accuracy |
+|---|---|
+| original zero-shot tagging | 94.6 % |
+| trained classifier (`models/slot_head.pt`: product shots + phone train photos) | **97.3 %** |
+
+Items whose classifier confidence is below 0.8 are marked "check category" (about
+3 % of phone photos, catching 7 of the 10 mistakes in the test set).
+
+**Phone-robust outfit model.**  Phone embeddings sit further from product shots
+(mean similarity to the nearest products 0.75, versus 0.83 between product shots).
+`training/train_compat.py --phone silueta` measures that distortion on the real
+phone photos (embedding minus its nearest same-category product) and adds it to
+half of the training outfits; the same distortion from *held-out* photos is added
+to the paper's test files to check the effect:
+
+| official test files | clean FITB / AUC | phone-like FITB / AUC |
+|---|---|---|
+| model trained on product shots only | 75.7 % / 0.917 | 58.3 % / 0.869 |
+| **phone-robust model (shipped)** | 75.7 % / 0.917 | **63.2 % / 0.890** |
+
+The phone-like test is a simulation in embedding space, and a harsh one (the
+distortion also contains ordinary item-to-item differences); there is still no
+labelled set of real phone-photo *outfits*.
+
+```
+python training/phone_embed.py raw silueta      # embed the phone photos
+python training/phone_eval.py silueta --save    # tagging accuracy + train slot_head.pt
+python training/phone_gap.py raw silueta        # distance to product shots
+python training/train_compat.py --phone silueta # phone-robust outfit model
+```
+
 ## Retrain
 
 ```

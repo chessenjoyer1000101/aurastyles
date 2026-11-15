@@ -100,6 +100,8 @@ def add_items(files: list[UploadFile] = File(...), x_aura_user: str = Header(Non
             np.save(d / f"{iid}.npy", a["emb"])
             item = dict(id=iid, name=a["name"], type=a["type"], slot=a["slot"], style=a["style"],
                         color=a["color"], colors=a["colors"], added=int(time.time()))
+            if a.get("unsure"):
+                item["unsure"] = True
             meta.append(item)
             save_meta(d, meta)
         added.append(item)
@@ -122,6 +124,7 @@ def patch_item(iid: str, p: Patch, x_aura_user: str = Header(None)):
                     if p.slot not in SLOT_LABEL:
                         raise HTTPException(400, "unknown slot")
                     it["slot"] = p.slot
+                    it.pop("unsure", None)
                 if p.name is not None:
                     it["name"] = p.name.strip()[:60] or it["name"]
                 save_meta(d, meta)
