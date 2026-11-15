@@ -1,6 +1,0 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
-open_clip_torch
-streamlit>=1.37
-numpy
-Pillow
