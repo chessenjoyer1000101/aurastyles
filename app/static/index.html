@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aura Styles</title>
+<meta name="description" content="Upload your wardrobe, get outfit ideas from an AI stylist.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23f6b48f'/%3E%3Cstop offset='1' stop-color='%239a7bd6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23g)'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f8f4ee; --panel:#fffdf9; --board:#f1ebe2; --ink:#1f1b17; --muted:#756c62; --line:#e4dbcf;
+  --accent:#7a4b8f; --accent-ink:#fff; --aura:linear-gradient(120deg,#f3a57c,#d98bb4 55%,#9a7bd6);
+  --good:#2f7d57; --warn:#a6591c; --shadow:0 1px 2px rgba(40,30,20,.06),0 8px 24px rgba(40,30,20,.06);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#17141a; --panel:#201c24; --board:#2a2530; --ink:#f1ece6; --muted:#a79fab; --line:#37313e;
+  --accent:#c9a2dd; --accent-ink:#1c1420; --good:#7fd0a5; --warn:#eeb07a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+header{display:flex;align-items:center;gap:14px;padding:22px 0 8px;flex-wrap:wrap}
+.mark{width:34px;height:34px;border-radius:50%;background:var(--aura);box-shadow:0 0 22px rgba(217,139,180,.55)}
+h1{font:600 28px/1 var(--serif);letter-spacing:.01em;margin:0}
+header p{margin:0;color:var(--muted);flex:1 1 240px}
+h2{font:600 21px/1.2 var(--serif);margin:0}
+section{margin-top:28px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);padding:7px 13px;border-radius:999px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+input[type=text]{flex:1 1 220px;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input[type=text]:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:0;border-radius:12px;padding:11px 20px;font:600 15px var(--sans);cursor:pointer;background:var(--ink);color:var(--bg)}
+.btn.primary{background:var(--aura);color:#fff;text-shadow:0 1px 1px rgba(60,20,60,.35)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.actions{margin-top:18px}
+.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;cursor:pointer}
+.pins{display:flex;gap:8px;flex-wrap:wrap}
+.pin{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 3px;font-size:13px;background:var(--bg)}
+.pin img{width:28px;height:28px;object-fit:contain;border-radius:50%;background:#fff}
+.pin button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 0 0 2px}
+.note{color:var(--warn);margin:14px 0 0;font-size:14px}
+.status{color:var(--muted);font-size:14px}
+
+.outfits{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:18px}
+.outfit{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.board{background:var(--board);display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:12px}
+.board .tile{grid-column:span 2;aspect-ratio:1;background:#fff;border-radius:12px;display:grid;place-items:center;padding:6px}
+.board .tile.big{grid-column:span 3}
+.board .tile{position:relative;min-height:0;overflow:hidden}
+.board img{position:absolute;inset:7px;width:calc(100% - 14px);height:calc(100% - 14px);object-fit:contain}
+.outfit .meta{padding:14px 16px 16px;display:flex;gap:14px;align-items:flex-start}
+.score{flex:none;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font:600 16px var(--serif);
+  background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--line) 0);position:relative;font-variant-numeric:tabular-nums}
+.score::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--panel)}
+.score span{position:relative}
+.outfit h3{font:600 15px var(--sans);margin:0 0 2px}
+.outfit p{margin:0;color:var(--muted);font-size:13.5px}
+
+.drop{border:1.5px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--bg)}
+.drop strong{color:var(--ink);display:block;font-size:16px;margin-bottom:2px}
+.bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:var(--aura);transition:width .25s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;margin-top:16px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+.item.pinned{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.item .pic{aspect-ratio:1;background:#fff;display:grid;place-items:center;padding:8px;cursor:pointer;border:0;width:100%}
+.item .pic{position:relative;overflow:hidden}
+.item .pic img{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);object-fit:contain}
+.item .info{padding:8px 10px 10px}
+.item .nm{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+.item select{width:100%;margin-top:6px;padding:5px 6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:12.5px}
+.item .del{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(30,25,20,.55);color:#fff;cursor:pointer;font-size:15px;line-height:1;opacity:0;transition:opacity .15s}
+.item:hover .del,.item .del:focus-visible{opacity:1}
+@media (hover:none){.item .del{opacity:1}}
+.item .tag{position:absolute;top:6px;left:6px;background:var(--accent);color:var(--accent-ink);font-size:11px;padding:2px 8px;border-radius:999px}
+.empty{color:var(--muted);text-align:center;padding:26px 10px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+footer{margin-top:44px;color:var(--muted);font-size:13px;text-align:center}
+.skeleton{height:330px;border-radius:18px;background:linear-gradient(100deg,var(--panel) 30%,var(--board) 50%,var(--panel) 70%);background-size:200% 100%;animation:sh 1.2s infinite linear;border:1px solid var(--line)}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+@media (max-width:560px){.wrap{padding:0 16px 60px}.outfits{grid-template-columns:1fr}.grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true"></div>
+    <h1>Aura Styles</h1>
+    <p>Add photos of your clothes. Get outfits that actually go together.</p>
+  </header>
+
+  <section class="panel" aria-labelledby="h-style">
+    <h2 id="h-style">Style me</h2>
+    <div class="label">Occasion</div>
+    <div class="row" id="occasions"></div>
+    <div class="row" style="margin-top:10px">
+      <input type="text" id="occ" maxlength="100" placeholder="…or describe it: “rooftop dinner”, “job interview”, “rainy day errands”" aria-label="Describe the occasion">
+    </div>
+    <div class="label">Weather</div>
+    <div class="row" id="weather"></div>
+    <div id="pinwrap" hidden>
+      <div class="label">Build around</div>
+      <div class="pins" id="pins"></div>
+    </div>
+    <div class="row actions">
+      <button class="btn primary" id="go">Suggest outfits</button>
+      <button class="btn ghost" id="shuffle" hidden>Shuffle</button>
+      <label class="check"><input type="checkbox" id="acc" checked> Add bags &amp; accessories</label>
+      <span class="status" id="sstatus" role="status"></span>
+    </div>
+    <p class="note" id="note" hidden></p>
+  </section>
+
+  <div class="outfits" id="outfits" aria-live="polite"></div>
+
+  <section aria-labelledby="h-ward">
+    <div class="head">
+      <h2 id="h-ward">Your wardrobe <span class="status" id="count"></span></h2>
+      <div class="row">
+        <button class="btn ghost" id="demo">Try a sample wardrobe</button>
+        <button class="btn ghost" id="clear" hidden>Clear all</button>
+      </div>
+    </div>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      <strong>Add clothes</strong>
+      Tap to choose photos, or drop them here. One item per photo, laid flat or on a hanger works best.
+      <div class="bar" id="bar" hidden><i></i></div>
+      <div class="status" id="ustatus" role="status"></div>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div class="row" id="filters" style="margin-top:16px"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden>Nothing here yet. Add a few tops, bottoms and shoes to get started — or try the sample wardrobe.</div>
+  </section>
+
+  <footer>Aura Styles · test build. Tap an item to build outfits around it. Wrong category? Fix it with the dropdown. Photos are stored on the test server only.</footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+let uid = null;
+try { uid = localStorage.getItem('aura_uid'); } catch {}
+if (!/^[a-f0-9]{32}$/.test(uid || '')) {
+  uid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+  try { localStorage.setItem('aura_uid', uid); } catch {}
+}
+const api = async (path, opt = {}) => {
+  const r = await fetch(path, { ...opt, headers: { 'X-Aura-User': uid, ...(opt.body && !(opt.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...(opt.headers || {}) } });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+};
+const img = id => `/img/${uid}/${id}.png`;
+
+const state = { items: [], slots: {}, filter: 'all', pins: new Set(), occasion: '', weather: '', seed: 0, busy: false };
+const OCCASIONS = ['Casual day', 'Work', 'Date night', 'Party', 'Formal event', 'Gym', 'Beach day', 'Cozy winter'];
+const WEATHER = [['', 'Any'], ['hot', 'Hot'], ['mild', 'Mild'], ['cold', 'Cold']];
+const byId = id => state.items.find(i => i.id === id);
+
+function renderControls() {
+  $('#occasions').replaceChildren(...OCCASIONS.map(o => el('button', {
+    className: 'chip', textContent: o, ariaPressed: String(state.occasion === o),
+    onclick: () => { state.occasion = state.occasion === o ? '' : o; $('#occ').value = ''; renderControls(); }
+  })));
+  $('#weather').replaceChildren(...WEATHER.map(([v, t]) => el('button', {
+    className: 'chip', textContent: t, ariaPressed: String(state.weather === v),
+    onclick: () => { state.weather = v; renderControls(); }
+  })));
+}
+$('#occ').addEventListener('input', () => { if (state.occasion) { state.occasion = ''; renderControls(); } });
+$('#occ').addEventListener('keydown', e => { if (e.key === 'Enter') suggest(0); });
+
+function renderPins() {
+  for (const id of [...state.pins]) if (!byId(id)) state.pins.delete(id);
+  $('#pinwrap').hidden = !state.pins.size;
+  $('#pins').replaceChildren(...[...state.pins].map(id => el('span', { className: 'pin' },
+    el('img', { src: img(id), alt: '' }), byId(id).name,
+    el('button', { textContent: '×', ariaLabel: `Remove ${byId(id).name}`, onclick: () => { state.pins.delete(id); renderPins(); renderWardrobe(); } }))));
+}
+
+function renderWardrobe() {
+  const { items, slots } = state;
+  $('#count').textContent = items.length ? `· ${items.length} item${items.length > 1 ? 's' : ''}` : '';
+  $('#clear').hidden = !items.length;
+  $('#empty').hidden = !!items.length;
+  const used = Object.keys(slots).filter(s => items.some(i => i.slot === s));
+  if (state.filter !== 'all' && !used.includes(state.filter)) state.filter = 'all';
+  $('#filters').replaceChildren(...(used.length > 1 ? [['all', 'All'], ...used.map(s => [s, slots[s]])] : []).map(([v, t]) => el('button', {
+    className: 'chip', textContent: t, ariaPressed: String(state.filter === v), onclick: () => { state.filter = v; renderWardrobe(); }
+  })));
+  const order = Object.keys(slots);
+  const shown = items.filter(i => state.filter === 'all' || i.slot === state.filter)
+    .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot) || b.added - a.added);
+  $('#grid').replaceChildren(...shown.map(it => {
+    const pinned = state.pins.has(it.id);
+    const sel = el('select', { ariaLabel: `Category of ${it.name}`, onchange: async e => {
+      try { Object.assign(it, await api(`/api/items/${it.id}`, { method: 'PATCH', body: JSON.stringify({ slot: e.target.value }) })); renderWardrobe(); } catch (err) { alertMsg(err.message); }
+    } }, ...Object.entries(slots).map(([v, t]) => el('option', { value: v, textContent: t, selected: v === it.slot })));
+    return el('div', { className: 'item' + (pinned ? ' pinned' : '') },
+      el('button', { className: 'pic', title: pinned ? 'Stop building around this' : 'Build outfits around this', ariaPressed: String(pinned),
+        onclick: () => { pinned ? state.pins.delete(it.id) : state.pins.add(it.id); renderPins(); renderWardrobe(); } },
+        el('img', { src: img(it.id), alt: it.name, loading: 'lazy' })),
+      pinned ? el('span', { className: 'tag', textContent: 'Build around' }) : '',
+      el('button', { className: 'del', textContent: '×', ariaLabel: `Delete ${it.name}`, onclick: async () => {
+        try { setWardrobe(await api(`/api/items/${it.id}`, { method: 'DELETE' })); } catch (err) { alertMsg(err.message); }
+      } }),
+      el('div', { className: 'info' },
+        el('div', { className: 'nm', title: `${it.name} · ${it.style}` }, el('span', { className: 'dot', style: `background:${it.colors?.[0]?.hex || '#999'}` }), it.name),
+        sel));
+  }));
+}
+function setWardrobe(w) { state.items = w.items; state.slots = w.slots; renderPins(); renderWardrobe(); }
+function alertMsg(m) { $('#ustatus').textContent = m; }
+
+// ---------- uploads ----------
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+    const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) });
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(res => c.toBlob(b => res(b || file), 'image/jpeg', 0.9));
+  } catch { return file; }
+}
+async function upload(files) {
+  files = [...files].filter(f => f.type.startsWith('image/') || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
+  if (!files.length || state.busy) return;
+  state.busy = true; $('#bar').hidden = false;
+  const errs = []; let done = 0;
+  for (const f of files) {
+    $('#ustatus').textContent = `Analysing ${done + 1} of ${files.length}…`;
+    const fd = new FormData(); fd.append('files', await shrink(f), f.name);
+    try { const r = await api('/api/items', { method: 'POST', body: fd }); errs.push(...r.errors); setWardrobe(r); }
+    catch (e) { errs.push(`${f.name}: ${e.message}`); }
+    done++; $('#bar i').style.width = `${100 * done / files.length}%`;
+  }
+  state.busy = false;
+  setTimeout(() => { $('#bar').hidden = true; $('#bar i').style.width = 0; }, 600);
+  $('#ustatus').textContent = errs.length ? `Some photos were skipped — ${errs.join('; ')}` : `Added ${done} item${done > 1 ? 's' : ''}.`;
+}
+const drop = $('#drop'), file = $('#file');
+drop.onclick = () => file.click();
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } };
+file.onchange = () => { upload(file.files); file.value = ''; };
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => upload(e.dataTransfer.files));
+
+$('#demo').onclick = async () => {
+  $('#demo').disabled = true;
+  try { setWardrobe(await api('/api/demo', { method: 'POST' })); $('#ustatus').textContent = 'Sample wardrobe added.'; }
+  catch (e) { alertMsg(e.message); }
+  $('#demo').disabled = false;
+};
+let armed = 0;
+$('#clear').onclick = async () => {
+  if (Date.now() - armed > 4000) { armed = Date.now(); $('#clear').textContent = 'Tap again to delete everything'; setTimeout(() => $('#clear').textContent = 'Clear all', 4000); return; }
+  armed = 0; $('#clear').textContent = 'Clear all';
+  try { setWardrobe(await api('/api/wardrobe', { method: 'DELETE' })); $('#outfits').replaceChildren(); $('#shuffle').hidden = true; } catch (e) { alertMsg(e.message); }
+};
+
+// ---------- suggestions ----------
+async function suggest(seed) {
+  if (state.items.length < 2) { $('#sstatus').textContent = 'Add at least two items first.'; return; }
+  state.seed = seed;
+  $('#go').disabled = $('#shuffle').disabled = true; $('#sstatus').textContent = 'Styling…'; $('#note').hidden = true;
+  $('#outfits').replaceChildren(...Array.from({ length: 3 }, () => el('div', { className: 'skeleton' })));
+  try {
+    const r = await api('/api/suggest', { method: 'POST', body: JSON.stringify({
+      occasion: $('#occ').value.trim() || state.occasion, weather: state.weather, anchors: [...state.pins], n: 6, accessories: $('#acc').checked, seed }) });
+    $('#outfits').replaceChildren(...r.outfits.map((o, k) => {
+      const its = o.items.map(byId).filter(Boolean);
+      const big = its.length <= 2 || its.length === 4;
+      return el('article', { className: 'outfit' },
+        el('div', { className: 'board' }, ...its.map(i => el('div', { className: 'tile' + (big ? ' big' : ''), title: i.name }, el('img', { src: img(i.id), alt: i.name })))),
+        el('div', { className: 'meta' },
+          el('div', { className: 'score', style: `--p:${o.match}`, title: 'How well the model thinks these pieces go together', ariaLabel: `Match ${o.match} percent` }, el('span', { textContent: o.match })),
+          el('div', {}, el('h3', { textContent: `Look ${k + 1}` }), el('p', { textContent: o.why }))));
+    }));
+    $('#sstatus').textContent = r.outfits.length ? '' : 'No outfits yet.';
+    $('#shuffle').hidden = !r.outfits.length;
+    if (r.note) { $('#note').textContent = r.note; $('#note').hidden = false; }
+  } catch (e) { $('#outfits').replaceChildren(); $('#sstatus').textContent = `Couldn’t get suggestions: ${e.message}`; }
+  $('#go').disabled = $('#shuffle').disabled = false;
+}
+$('#go').onclick = () => suggest(0);
+$('#shuffle').onclick = () => suggest(state.seed + 1);
+
+renderControls();
+api('/api/wardrobe').then(setWardrobe).catch(e => alertMsg(`Couldn’t reach the server: ${e.message}`));
+</script>
+</body>
+</html>

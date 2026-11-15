@@ -1,0 +1,7 @@
+# Extra packages for the FastAPI version (run_local.bat) and for retraining
+fastapi
+uvicorn
+python-multipart
+scikit-learn
+pyarrow
+huggingface_hub

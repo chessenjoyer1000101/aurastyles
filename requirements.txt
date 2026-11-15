@@ -1,0 +1,12 @@
+# CPU-only PyTorch wheels (Streamlit Community Cloud has no GPU; keeps the install small)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+open_clip_torch
+transformers
+sentencepiece
+streamlit>=1.40
+numpy
+pillow
+opencv-python-headless
+rembg
+onnxruntime

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.claude/
+# private / large / regenerable
+data/users/
+data/accounts/
+data/emb/
+data/raw/
+data/demo_raw/
+data/polyvore/
+data/*.log
